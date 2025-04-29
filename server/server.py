@@ -150,7 +150,7 @@ async def get_ai_review(journal: Journal) -> str:
     if not api_key:
         raise ValueError('DASHSCOPE_API_KEY环境变量未配置')
         
-    prompt = f"请根据以下投资日志内容，给出详细的复盘建议：\n资产：{journal.asset}\n数量：{journal.amount}\n价格：{journal.price}\n策略：{journal.strategy}\n理由：{journal.reasons}\n风险：{journal.risks}\n预期收益：{journal.expected_return}\n退出计划：{journal.exit_plan}\n市场状况：{journal.market_conditions}\n情绪状态：{journal.emotional_state}"
+    prompt = f"请根据以下投资日志内容，给出详细的投资建议，并指出投资日志描述的不足之处：\n资产：{journal.asset}\n数量：{journal.amount}\n价格：{journal.price}\n策略：{journal.strategy}\n理由：{journal.reasons}\n风险：{journal.risks}\n预期收益：{journal.expected_return}\n退出计划：{journal.exit_plan}\n市场状况：{journal.market_conditions}\n情绪状态：{journal.emotional_state}"
     print(f"生成AI复盘提示: {prompt}")
     
     try:
@@ -159,8 +159,8 @@ async def get_ai_review(journal: Journal) -> str:
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
         
-        completion = await client.chat.completions.create(
-            model="deepseek-r1",
+        completion = client.chat.completions.create(
+            model="deepseek-v3",
             messages=[{'role': 'user', 'content': prompt}],
             max_tokens=8192
         )
@@ -169,7 +169,7 @@ async def get_ai_review(journal: Journal) -> str:
         print(f"成功生成AI复盘: {ai_review}")
         return ai_review
                 
-    except aiohttp.ClientError as e:
+    except Exception as e:
         print(f"网络请求错误: {str(e)}")
         raise ValueError(f"网络请求失败: {str(e)}")
     except ValueError as e:
