@@ -120,7 +120,7 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
           )}
           <div className="mt-2 text-gray-700 bg-blue-50 p-4 rounded-md prose max-w-none">
             <ReactMarkdown>
-              {journal.aiReview || journal.ai_review || "点击生成AI复盘按钮获取AI分析建议"}
+              {String(journal.ai_review || journal.aiReview || "点击生成AI复盘按钮获取AI分析建议")}
             </ReactMarkdown>
           </div>
         </div>

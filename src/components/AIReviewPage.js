@@ -69,7 +69,7 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
         )}
         <div className="text-gray-700 bg-blue-50 p-4 rounded-md prose max-w-none">
           <ReactMarkdown>
-            {journal.aiReview || journal.ai_review || "暂无AI复盘内容"}
+            {String(journal.ai_review  || journal.aiReview || "暂无AI复盘内容")}
           </ReactMarkdown>
         </div>
       </div>

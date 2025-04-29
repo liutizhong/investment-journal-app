@@ -88,8 +88,9 @@ app.post('/api/journals/:id/ai-review', async (req, res) => {
 
 // AI review生成逻辑（调用OpenAI API，需配置API KEY）
 async function getAIReview(journal) {
-  const prompt = `请根据以下投资日志内容，给出详细的复盘建议：\n资产：${journal.asset}\n数量：${journal.amount}\n价格：${journal.price}\n策略：${journal.strategy}\n理由：${journal.reasons}\n风险：${journal.risks}\n预期收益：${journal.expectedReturn}\n退出计划：${journal.exitPlan}\n市场状况：${journal.marketConditions}\n情绪状态：${journal.emotionalState}`;
+  const prompt = `请根据以下投资日志内容，给出详细的复盘建议：\n资产：${journal.asset}\n数量：${journal.amount}\n价格：${journal.price}\n策略：${journal.strategy}\n理由：${journal.reasons}\n风险：${journal.risks}\n预期收益：${journal.expected_return}\n退出计划：${journal.exit_plan}\n市场状况：${journal.market_conditions}\n情绪状态：${journal.emotional_state}`;
   try {
+    console.log(prompt);
     // 调用阿里云deepseek r1（兼容OpenAI API）
     const response = await axios.post('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
       model: 'deepseek-r1',
@@ -115,7 +116,8 @@ async function getAIReview(journal) {
     //   ],
     // });
     // return completion.choices[0].message.content //
-
+    console.log(prompt);
+    console.log(response.data.choices[0].message.content);
     return response.data.choices[0].message.content;
   } catch (err) {
     return 'AI复盘生成失败，请稍后重试。';

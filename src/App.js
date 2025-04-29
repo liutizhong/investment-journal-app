@@ -94,9 +94,19 @@ const App = () => {
 
   // 生成AI复盘
   const handleGenerateAIReview = async (journal) => {
-    // 直接跳转到AI复盘页面
-    setView('aiReview');
-    setSelectedJournal(journal);
+    try {
+      showNotification('正在生成AI复盘...', 'info');
+      const aiReview = await generateAIReview(journal);
+      setJournals(prev => prev.map(j => 
+        j.id === journal.id ? { ...j, aiReview } : j
+      ));
+      setSelectedJournal({ ...journal, aiReview });
+      setView('aiReview');
+      showNotification('AI复盘生成成功', 'success');
+    } catch (error) {
+      console.error('生成AI复盘失败:', error);
+      showNotification('生成AI复盘失败', 'error');
+    }
   };
 
   // 查看日志详情
@@ -183,6 +193,7 @@ const App = () => {
             <AIReviewPage 
               journal={selectedJournal}
               onBack={() => setView('list')}
+              onGenerateAIReview={handleGenerateAIReview}
             />
           )}
         </div>

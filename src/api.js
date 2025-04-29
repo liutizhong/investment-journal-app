@@ -1,5 +1,5 @@
 // 前端API请求封装，便于App.js调用后端服务
-const API_BASE = 'http://localhost:4000/api';
+const API_BASE = 'http://127.0.0.1:4000/api';
 
 export async function fetchJournals() {
   const res = await fetch(`${API_BASE}/journals`);
