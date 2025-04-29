@@ -26,6 +26,7 @@ export async function deleteJournal(id) {
 }
 
 export async function generateAIReview(journal) {
+  console.log('AI Review Prompt:', journal);
   const res = await fetch(`${API_BASE}/journals/${journal.id}/ai-review`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
