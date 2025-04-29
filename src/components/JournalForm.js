@@ -27,11 +27,19 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
   useEffect(() => {
     if (journal) {
       setFormData({
-        ...journal,
+        id: journal.id,
+        date: journal.date,
+        asset: journal.asset,
+        amount: journal.amount,
+        price: journal.price,
+        strategy: journal.strategy,
+        reasons: journal.reasons,
+        risks: journal.risks,
         expectedReturn: journal.expected_return || journal.expectedReturn,
         exitPlan: journal.exit_plan || journal.exitPlan,
         marketConditions: journal.market_conditions || journal.marketConditions,
-        emotionalState: journal.emotional_state || journal.emotionalState
+        emotionalState: journal.emotional_state || journal.emotionalState,
+        aiReview: journal.ai_review || journal.aiReview
       });
       setIsEdit(true);
     } else {

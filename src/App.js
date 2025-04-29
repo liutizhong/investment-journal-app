@@ -3,6 +3,7 @@ import { fetchJournals, addJournal, deleteJournal, generateAIReview } from './ap
 import JournalForm from './components/JournalForm';
 import JournalList from './components/JournalList';
 import JournalDetail from './components/JournalDetail';
+import AIReviewPage from './components/AIReviewPage';
 import Notification from './components/Notification';
 import { Layers, BookOpen, PlusCircle } from 'lucide-react';
 
@@ -10,7 +11,7 @@ const App = () => {
   // 状态管理
   const [journals, setJournals] = useState([]);
   const [selectedJournal, setSelectedJournal] = useState(null);
-  const [view, setView] = useState('list'); // 'list', 'detail', 'form'
+  const [view, setView] = useState('list'); // 'list', 'detail', 'form', 'aiReview'
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -93,30 +94,9 @@ const App = () => {
 
   // 生成AI复盘
   const handleGenerateAIReview = async (journal) => {
-    try {
-      showNotification('AI复盘生成中...', 'success');
-      const response = await generateAIReview(journal);
-      
-      // 更新日志中的AI复盘建议
-      const updatedJournal = { 
-        ...journal, 
-        aiReview: response.aiReview,
-        ai_review: response.aiReview
-      };
-      
-      // 更新日志列表和选中的日志
-      setJournals(prev => 
-        prev.map(j => j.id === journal.id ? updatedJournal : j)
-      );
-      
-      if (selectedJournal && selectedJournal.id === journal.id) {
-        setSelectedJournal(updatedJournal);
-      }
-      
-      showNotification('AI复盘已生成', 'success');
-    } catch (error) {
-      showNotification('AI复盘生成失败', 'error');
-    }
+    // 直接跳转到AI复盘页面
+    setView('aiReview');
+    setSelectedJournal(journal);
   };
 
   // 查看日志详情
@@ -194,10 +174,15 @@ const App = () => {
             <JournalForm 
               journal={selectedJournal}
               onSubmit={selectedJournal ? handleUpdateJournal : handleAddJournal}
-              onCancel={() => {
-                setSelectedJournal(null);
-                setView('list');
-              }}
+              onCancel={() => setView('list')}
+              showNotification={showNotification}
+            />
+          )}
+          
+          {view === 'aiReview' && selectedJournal && (
+            <AIReviewPage 
+              journal={selectedJournal}
+              onBack={() => setView('list')}
             />
           )}
         </div>

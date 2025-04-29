@@ -55,7 +55,7 @@ const JournalList = ({ journals, onView, onEdit, onDelete, onGenerateAI }) => {
                 className="inline-flex items-center text-sm text-purple-600 hover:text-purple-800 px-2 py-1 rounded hover:bg-purple-50"
               >
                 <Brain className="w-4 h-4 mr-1" />
-                AI复盘
+                查看AI复盘
               </button>
               
               <button
