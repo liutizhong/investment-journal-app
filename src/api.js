@@ -32,6 +32,6 @@ export async function generateAIReview(journal) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(journal)
   });
-  if (!res.ok) throw new Error('生成AI复盘失败');
+  if (!res.ok) throw new Error('优化投资日志策略失败');
   return res.json();
 }

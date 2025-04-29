@@ -31,7 +31,7 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
             <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-            <h4 className="font-medium text-gray-700">AI复盘建议</h4>
+            <h4 className="font-medium text-gray-700">AI建议</h4>
           </div>
           <button
               onClick={async () => {
@@ -40,7 +40,7 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
                   setError(null);
                   await onGenerateAIReview(journal);
                 } catch (err) {
-                  setError('生成AI复盘失败，请重试');
+                  setError('优化投资日志策略失败，请重试');
                   console.error(err);
                 } finally {
                   setIsGenerating(false);
@@ -57,7 +57,7 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-1" />
-                  {journal.aiReview || journal.ai_review ? '重新生成AI复盘' : '生成AI复盘'}
+                  {journal.aiReview || journal.ai_review ? '重新优化投资日志策略' : '优化投资日志策略'}
                 </>
               )}
             </button>

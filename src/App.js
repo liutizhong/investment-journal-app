@@ -92,10 +92,16 @@ const App = () => {
     }
   };
 
-  // 生成AI复盘
+  // 查看AI复盘
+  const handleViewAIReview = (journal) => {
+    setSelectedJournal(journal);
+    setView('aiReview');
+  };
+
+  // 优化投资日志策略
   const handleGenerateAIReview = async (journal) => {
     try {
-      showNotification('正在生成AI复盘...', 'info');
+      showNotification('正在优化投资日志策略...', 'info');
       const aiReview = await generateAIReview(journal);
       setJournals(prev => prev.map(j => 
         j.id === journal.id ? { ...j, aiReview } : j
@@ -104,8 +110,8 @@ const App = () => {
       setView('aiReview');
       showNotification('AI复盘生成成功', 'success');
     } catch (error) {
-      console.error('生成AI复盘失败:', error);
-      showNotification('生成AI复盘失败', 'error');
+      console.error('优化投资日志策略失败:', error);
+      showNotification('优化投资日志策略失败', 'error');
     }
   };
 
@@ -165,7 +171,7 @@ const App = () => {
               onView={handleViewJournal}
               onEdit={handleEditJournal}
               onDelete={handleDeleteJournal}
-              onGenerateAI={handleGenerateAIReview}
+              onGenerateAI={handleViewAIReview}
               isLoading={isLoading}
             />
           )}

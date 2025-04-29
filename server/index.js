@@ -46,7 +46,7 @@ app.get('/api/journals', async (req, res) => {
   }
 });
 
-// 新增日志并生成AI复盘
+// 新增日志并优化投资日志策略
 app.post('/api/journals', async (req, res) => {
   const journal = req.body;
   try {

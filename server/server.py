@@ -64,7 +64,7 @@ class Journal(BaseModel):
     ai_review: str | None = None
 
 class AIReviewInput(BaseModel):
-    """仅包含生成AI复盘所需的必填字段"""
+    """仅包含优化投资日志策略所需的必填字段"""
     date: str
     asset: str
     amount: str
@@ -151,7 +151,7 @@ async def get_ai_review(journal: Journal) -> str:
         raise ValueError('DASHSCOPE_API_KEY环境变量未配置')
         
     prompt = f"请根据以下投资日志内容，给出详细的投资建议，并指出投资日志描述的不足之处：\n资产：{journal.asset}\n数量：{journal.amount}\n价格：{journal.price}\n策略：{journal.strategy}\n理由：{journal.reasons}\n风险：{journal.risks}\n预期收益：{journal.expected_return}\n退出计划：{journal.exit_plan}\n市场状况：{journal.market_conditions}\n情绪状态：{journal.emotional_state}"
-    print(f"生成AI复盘提示: {prompt}")
+    print(f"优化投资日志策略提示: {prompt}")
     
     try:
         client = OpenAI(
@@ -166,7 +166,7 @@ async def get_ai_review(journal: Journal) -> str:
         )
         
         ai_review = completion.choices[0].message.content
-        print(f"成功生成AI复盘: {ai_review}")
+        print(f"成功优化投资日志策略: {ai_review}")
         return ai_review
                 
     except Exception as e:

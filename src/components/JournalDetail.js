@@ -14,7 +14,7 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
       setError(null);
       await onGenerateAIReview(journal);
     } catch (err) {
-      setError('生成AI复盘失败，请重试');
+      setError('优化投资日志策略失败，请重试');
       console.error(err);
     } finally {
       setIsGenerating(false);
@@ -93,7 +93,7 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
           <div className="flex justify-between items-center">
             <h4 className="font-medium text-gray-700 flex items-center">
               <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-              AI复盘建议
+              AI建议
             </h4>
             <button
               onClick={handleGenerateReview}
@@ -108,7 +108,7 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-1" />
-                  生成AI复盘
+                  优化投资日志策略
                 </>
               )}
             </button>
@@ -120,7 +120,7 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
           )}
           <div className="mt-2 text-gray-700 bg-blue-50 p-4 rounded-md prose max-w-none">
             <ReactMarkdown>
-              {String(journal.ai_review || journal.aiReview || "点击生成AI复盘按钮获取AI分析建议")}
+              {String(journal.ai_review || journal.aiReview || "点击优化投资日志策略按钮获取AI分析建议")}
             </ReactMarkdown>
           </div>
         </div>

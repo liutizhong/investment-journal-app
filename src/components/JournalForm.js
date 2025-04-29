@@ -78,8 +78,8 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
     e.preventDefault();
     
     try {
-      // 生成AI复盘建议
-      showNotification('正在生成AI复盘...', 'info');
+      // 优化投资日志策略建议
+      showNotification('正在优化投资日志策略...', 'info');
       setIsGenerating(true);
       const aiReview = await generateAIReview(formData);
       setIsGenerating(false);
