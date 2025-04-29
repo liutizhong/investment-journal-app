@@ -24,3 +24,13 @@ export async function deleteJournal(id) {
   if (!res.ok) throw new Error('删除日志失败');
   return res.json();
 }
+
+export async function generateAIReview(journal) {
+  const res = await fetch(`${API_BASE}/journals/${journal.id}/ai-review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(journal)
+  });
+  if (!res.ok) throw new Error('生成AI复盘失败');
+  return res.json();
+}

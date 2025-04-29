@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Trash2, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import { fetchJournals, addJournal, deleteJournal } from './api';
+import { Save, Trash2, FileText, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { fetchJournals, addJournal, deleteJournal, generateAIReview } from './api';
 
 // 主应用组件
 export default function InvestmentJournal() {
@@ -33,9 +33,10 @@ export default function InvestmentJournal() {
       // 字段名映射处理
       const mapped = data.map(j => ({
         ...j,
+        marketConditions: j.market_conditions,
+        aiReview: j.ai_review,
         expectedReturn: j.expected_return,
         exitPlan: j.exit_plan,
-        marketConditions: j.market_conditions || j.marketConditions,
         emotionalState: j.emotional_state || j.emotionalState
       }));
       setJournals(mapped);
@@ -60,16 +61,47 @@ export default function InvestmentJournal() {
     e.preventDefault();
     try {
       let saved;
+      // 使用本地方法生成初始AI复盘建议
+      const aiReview = await getLocalAIReview(currentJournal);
+      const journalWithReview = {
+        ...currentJournal,
+        aiReview: aiReview
+      };
+      
       if (editMode) {
         // 编辑模式：先删除旧的再新增（简化处理）
         await deleteJournal(selectedJournalId);
       }
-      saved = await addJournal(currentJournal);
+      saved = await addJournal(journalWithReview);
       setJournals(prev => editMode ? [saved, ...prev.filter(j => j.id !== selectedJournalId)] : [saved, ...prev]);
       setNotification({ show: true, message: editMode ? '日志已更新' : '新日志已保存', type: 'success' });
       resetForm();
     } catch (err) {
       setNotification({ show: true, message: '保存失败', type: 'error' });
+    }
+  };
+  
+  // 手动生成AI复盘建议
+  const handleGenerateAIReview = async (journal) => {
+    try {
+      setNotification({ show: true, message: 'AI复盘生成中...', type: 'success' });
+      // 调用API获取AI复盘
+      const response = await generateAIReview(journal);
+      
+      // 更新日志中的AI复盘建议
+      const updatedJournal = { ...journal, aiReview: response.aiReview || response };
+      
+      // 更新日志列表
+      setJournals(prev => prev.map(j => j.id === journal.id ? updatedJournal : j));
+      
+      setNotification({ show: true, message: 'AI复盘已生成', type: 'success' });
+    } catch (err) {
+      console.error('生成AI复盘失败:', err);
+      // 使用本地生成的AI复盘
+      const localReview = generateLocalAIReview(journal);
+      const updatedJournal = { ...journal, aiReview: localReview };
+      setJournals(prev => prev.map(j => j.id === journal.id ? updatedJournal : j));
+      setNotification({ show: true, message: '使用本地AI复盘生成', type: 'success' });
     }
   };
 
@@ -140,8 +172,8 @@ export default function InvestmentJournal() {
     }
   }, [notification]);
 
-  // 生成AI复盘建议
-  const generateAIReview = (journal) => {
+  // 本地生成AI复盘建议（作为后备方案）
+  const generateLocalAIReview = (journal) => {
     // 这里是一个简单的AI复盘逻辑，实际应用中可以接入更复杂的AI服务
     let review = '';
     
@@ -183,6 +215,17 @@ export default function InvestmentJournal() {
     }
     
     return review;
+  };
+  
+  // 获取AI复盘建议
+  const getLocalAIReview = async (journal) => {
+    try {
+      // 直接返回本地生成的复盘建议
+      return generateLocalAIReview(journal);
+    } catch (err) {
+      console.error('生成本地AI复盘失败', err);
+      return '无法生成AI复盘建议，请稍后重试。';
+    }
   };
 
   return (
@@ -453,12 +496,21 @@ export default function InvestmentJournal() {
                     </div>
                     
                     <div className="mt-6 border-t pt-4">
-                      <h4 className="font-medium text-gray-700 flex items-center">
-                        <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-                        AI复盘建议
-                      </h4>
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium text-gray-700 flex items-center">
+                          <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
+                          AI复盘建议
+                        </h4>
+                        <button
+                          onClick={() => handleGenerateAIReview(journal)}
+                          className="inline-flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-md hover:bg-blue-200 transition"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                          生成AI复盘
+                        </button>
+                      </div>
                       <div className="mt-2 text-gray-700 bg-blue-50 p-4 rounded-md whitespace-pre-line">
-                        {journal.aiReview}
+                        {journal.aiReview || "点击生成AI复盘按钮获取AI分析建议"}
                       </div>
                     </div>
                     

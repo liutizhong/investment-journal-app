@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
 const axios = require('axios');
+// import OpenAI from "openai";
 
 const app = express();
 app.use(cors());
@@ -71,21 +72,50 @@ app.delete('/api/journals/:id', async (req, res) => {
   }
 });
 
+// AI复盘生成接口（前端主动触发）
+app.post('/api/journals/:id/ai-review', async (req, res) => {
+  const journal = req.body;
+  const id = req.params.id;
+  try {
+    const aiReview = await getAIReview(journal);
+    await pool.query('UPDATE journals SET ai_review=$1 WHERE id=$2', [aiReview, id]);
+    const result = await pool.query('SELECT * FROM journals WHERE id=$1', [id]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // AI review生成逻辑（调用OpenAI API，需配置API KEY）
 async function getAIReview(journal) {
   const prompt = `请根据以下投资日志内容，给出详细的复盘建议：\n资产：${journal.asset}\n数量：${journal.amount}\n价格：${journal.price}\n策略：${journal.strategy}\n理由：${journal.reasons}\n风险：${journal.risks}\n预期收益：${journal.expectedReturn}\n退出计划：${journal.exitPlan}\n市场状况：${journal.marketConditions}\n情绪状态：${journal.emotionalState}`;
   try {
     // 调用阿里云deepseek r1（兼容OpenAI API）
-    const response = await axios.post('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
-      model: 'deepseek-chat',
+    const response = await axios.post('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      model: 'deepseek-r1',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300
+      max_tokens: 8192
     }, {
       headers: {
         'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
         'Content-Type': 'application/json'
       }
     });
+    // const openai = new OpenAI(
+    //   {
+    //       // 若没有配置环境变量，请用百炼API Key将下行替换为：apiKey: "sk-xxx",
+    //       apiKey: process.env.DASHSCOPE_API_KEY,
+    //       baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    //   }
+    // );
+    // const completion = await openai.chat.completions.create({
+    //   model: "deepseek-r1",  // 此处以 deepseek-r1 为例，可按需更换模型名称。
+    //   messages: [
+    //       { role: "user", content: prompt }
+    //   ],
+    // });
+    // return completion.choices[0].message.content //
+
     return response.data.choices[0].message.content;
   } catch (err) {
     return 'AI复盘生成失败，请稍后重试。';
