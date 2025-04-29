@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import asyncpg
 import os
-import aiohttp
+from openai import OpenAI
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -154,30 +154,20 @@ async def get_ai_review(journal: Journal) -> str:
     print(f"生成AI复盘提示: {prompt}")
     
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-                json={
-                    'model': 'deepseek-r1',
-                    'messages': [{'role': 'user', 'content': prompt}],
-                    'max_tokens': 8192
-                },
-                headers={
-                    'Authorization': f"Bearer {api_key}",
-                    'Content-Type': 'application/json'
-                }
-            ) as resp:
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    raise ValueError(f"API请求失败，状态码: {resp.status}, 错误: {error_text}")
-                    
-                data = await resp.json()
-                if 'choices' not in data or not data['choices']:
-                    raise ValueError(f"API返回数据格式错误: {data}")
-                    
-                ai_review = data['choices'][0]['message']['content']
-                print(f"成功生成AI复盘: {ai_review}")
-                return ai_review
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+        
+        completion = await client.chat.completions.create(
+            model="deepseek-r1",
+            messages=[{'role': 'user', 'content': prompt}],
+            max_tokens=8192
+        )
+        
+        ai_review = completion.choices[0].message.content
+        print(f"成功生成AI复盘: {ai_review}")
+        return ai_review
                 
     except aiohttp.ClientError as e:
         print(f"网络请求错误: {str(e)}")
