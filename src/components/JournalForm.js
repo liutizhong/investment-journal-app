@@ -12,10 +12,10 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
     strategy: '',
     reasons: '',
     risks: '',
-    expectedReturn: '',
-    exitPlan: '',
-    marketConditions: '',
-    emotionalState: '',
+    expected_return: '',
+    exit_plan: '',
+    market_conditions: '',
+    emotional_state: '',
     aiReview: ''
   });
   
@@ -26,20 +26,21 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
   // 如果传入了日志对象，则设置为编辑模式
   useEffect(() => {
     if (journal) {
+      console.log('编辑模式，接收到的日志数据:', journal);
       setFormData({
         id: journal.id,
-        date: journal.date,
-        asset: journal.asset,
-        amount: journal.amount,
-        price: journal.price,
-        strategy: journal.strategy,
-        reasons: journal.reasons,
-        risks: journal.risks,
-        expectedReturn: journal.expected_return || journal.expectedReturn,
-        exitPlan: journal.exit_plan || journal.exitPlan,
-        marketConditions: journal.market_conditions || journal.marketConditions,
-        emotionalState: journal.emotional_state || journal.emotionalState,
-        aiReview: journal.ai_review || journal.aiReview
+        date: journal.date || '',
+        asset: journal.asset || '',
+        amount: journal.amount || '',
+        price: journal.price || '',
+        strategy: journal.strategy || '',
+        reasons: journal.reasons || '',
+        risks: journal.risks || '',
+        expected_return: journal.expected_return  || journal.expected_return || '',
+        exit_plan: journal.exit_plan || journal.exit_plan || '',
+        market_conditions: journal.market_conditions  || journal.market_conditions || '',
+        emotional_state: journal.emotional_state  || journal.emotional_state || '',
+        aiReview: journal.ai_review  || journal.aiReview || ''
       });
       setIsEdit(true);
     } else {
@@ -65,10 +66,10 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
       strategy: '',
       reasons: '',
       risks: '',
-      expectedReturn: '',
-      exitPlan: '',
-      marketConditions: '',
-      emotionalState: '',
+      expected_return: '',
+      exit_plan: '',
+      market_conditions: '',
+      emotional_state: '',
       aiReview: ''
     });
   };
@@ -79,10 +80,11 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
     
     try {
       // 优化投资日志策略建议
-      showNotification('正在优化投资日志策略...', 'info');
-      setIsGenerating(true);
-      const aiReview = await generateAIReview(formData);
-      setIsGenerating(false);
+      // showNotification('正在优化投资日志策略...', 'info');
+      // setIsGenerating(true);
+      // const aiReview = await generateAIReview(formData);
+      // setIsGenerating(false);
+      const aiReview  = "";
       
       // 更新表单状态以触发重新渲染
       setFormData(prev => ({
@@ -91,14 +93,20 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
         ai_review: aiReview
       }));
       
-      // 保存日志
+      // 保存日志，确保同时包含驼峰式和下划线命名的字段
       const journalWithReview = {
         ...formData,
         aiReview,
-        ai_review: aiReview
+        ai_review: aiReview,
+        // 确保同时包含驼峰式和下划线命名的字段
+        expected_return: formData.expected_return,
+        exit_plan: formData.exit_plan,
+        market_conditions: formData.market_conditions,
+        emotional_state: formData.emotional_state
       };
       
-      await onSave(journalWithReview, isEdit);
+      console.log('提交的日志数据:', journalWithReview);
+      await onSave(journalWithReview);
       
       // 成功后重置表单
       if (!isEdit) {
@@ -228,8 +236,8 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
             <label className="block text-sm font-medium text-gray-700">预期收益</label>
             <input
               type="text"
-              name="expectedReturn"
-              value={formData.expectedReturn}
+              name="expected_return"
+              value={formData.expected_return}
               onChange={handleInputChange}
               placeholder="例如：20%、100点等"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
@@ -241,8 +249,8 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
             <label className="block text-sm font-medium text-gray-700">退出计划</label>
             <input
               type="text"
-              name="exitPlan"
-              value={formData.exitPlan}
+              name="exit_plan"
+              value={formData.exit_plan}
               onChange={handleInputChange}
               placeholder="止盈/止损点或其他退出条件"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
@@ -254,8 +262,8 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700">市场状况</label>
           <textarea
-            name="marketConditions"
-            value={formData.marketConditions}
+            name="market_conditions"
+            value={formData.market_conditions}
             onChange={handleInputChange}
             placeholder="描述当前的市场环境"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
@@ -267,8 +275,8 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
           <label className="block text-sm font-medium text-gray-700">情绪状态</label>
           <input
             type="text"
-            name="emotionalState"
-            value={formData.emotionalState}
+            name="emotional_state"
+            value={formData.emotional_state}
             onChange={handleInputChange}
             placeholder="描述您当前的情绪状态，如：平静、焦虑、兴奋等"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"

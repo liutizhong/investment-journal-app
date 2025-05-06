@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchJournals, addJournal, deleteJournal, generateAIReview } from './api';
+import { fetchJournals, addJournal, deleteJournal, generateAIReview, updateJournal } from './api';
 import JournalForm from './components/JournalForm';
 import JournalList from './components/JournalList';
 import JournalDetail from './components/JournalDetail';
@@ -63,13 +63,11 @@ const App = () => {
   // 更新日志
   const handleUpdateJournal = async (journal) => {
     try {
-      // 先删除旧的再添加新的
-      await deleteJournal(journal.id);
-      const updatedJournal = await addJournal(journal);
-      setJournals(prev => [
-        updatedJournal, 
-        ...prev.filter(j => j.id !== journal.id)
-      ]);
+      // 直接调用updateJournal API更新数据库记录
+      const updatedJournal = await updateJournal(journal);
+      setJournals(prev => prev.map(j => 
+        j.id === journal.id ? updatedJournal : j
+      ));
       showNotification('日志已更新', 'success');
       setView('list');
     } catch (error) {
@@ -189,7 +187,7 @@ const App = () => {
           {view === 'form' && (
             <JournalForm 
               journal={selectedJournal}
-              onSubmit={selectedJournal ? handleUpdateJournal : handleAddJournal}
+              onSave={selectedJournal ? handleUpdateJournal : handleAddJournal}
               onCancel={() => setView('list')}
               showNotification={showNotification}
             />

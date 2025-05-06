@@ -46,17 +46,40 @@ app.get('/api/journals', async (req, res) => {
   }
 });
 
+
 // 新增日志并优化投资日志策略
 app.post('/api/journals', async (req, res) => {
   const journal = req.body;
   try {
     // 调用AI API生成review
-    const aiReview = await getAIReview(journal);
+    // const aiReview = await getAIReview(journal);
     const insertResult = await pool.query(
-      'INSERT INTO journals (date, asset, amount, price, strategy, reasons, risks, expected_return, exit_plan, market_conditions, emotional_state, ai_review) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *',
-      [journal.date, journal.asset, journal.amount, journal.price, journal.strategy, journal.reasons, journal.risks, journal.expectedReturn, journal.exitPlan, journal.marketConditions, journal.emotionalState, aiReview]
+      'INSERT INTO journals (date, asset, amount, price, strategy, reasons, risks, expected_return, exit_plan, market_conditions, emotional_state) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',
+      [journal.date, journal.asset, journal.amount, journal.price, journal.strategy, journal.reasons, journal.risks, 
+        journal.expected_return, journal.exit_plan, journal.market_conditions, journal.emotional_state]
     );
     res.json(insertResult.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 更新日志
+app.put('/api/journals/:id', async (req, res) => {
+  const journal = req.body;
+  const id = req.params.id;
+  try {
+    const updateResult = await pool.query(
+      'UPDATE journals SET date=$1, asset=$2, amount=$3, price=$4, strategy=$5, reasons=$6, risks=$7, expected_return=$8, exit_plan=$9, market_conditions=$10, emotional_state=$11 WHERE id=$12 RETURNING *',
+      [journal.date, journal.asset, journal.amount, journal.price, journal.strategy, journal.reasons, journal.risks, 
+        journal.expected_return, journal.exit_plan, journal.market_conditions, journal.emotional_state, id]
+    );
+    
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ error: '未找到指定ID的日志' });
+    }
+    
+    res.json(updateResult.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -93,7 +116,7 @@ async function getAIReview(journal) {
     console.log(prompt);
     // 调用阿里云deepseek r1（兼容OpenAI API）
     const response = await axios.post('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-      model: 'deepseek-r1',
+      model: 'deepseek-v3',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 8192
     }, {
@@ -102,21 +125,7 @@ async function getAIReview(journal) {
         'Content-Type': 'application/json'
       }
     });
-    // const openai = new OpenAI(
-    //   {
-    //       // 若没有配置环境变量，请用百炼API Key将下行替换为：apiKey: "sk-xxx",
-    //       apiKey: process.env.DASHSCOPE_API_KEY,
-    //       baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    //   }
-    // );
-    // const completion = await openai.chat.completions.create({
-    //   model: "deepseek-r1",  // 此处以 deepseek-r1 为例，可按需更换模型名称。
-    //   messages: [
-    //       { role: "user", content: prompt }
-    //   ],
-    // });
-    // return completion.choices[0].message.content //
-    console.log(prompt);
+    // const openai = new OpenAI({
     console.log(response.data.choices[0].message.content);
     return response.data.choices[0].message.content;
   } catch (err) {

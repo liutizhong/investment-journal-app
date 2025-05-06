@@ -59,7 +59,7 @@ const JournalList = ({ journals, onView, onEdit, onDelete, onGenerateAI }) => {
               </button>
               
               <button
-                onClick={() => onEdit(journal.id)}
+                onClick={() => onEdit(journal)}
                 className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50"
               >
                 <Edit className="w-4 h-4 mr-1" />

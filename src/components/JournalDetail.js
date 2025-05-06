@@ -63,14 +63,14 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
           <div>
             <h4 className="font-medium text-gray-700">预期收益</h4>
             <p className="mt-1 text-gray-600 bg-gray-50 p-3 rounded-md">
-              {journal.expectedReturn || journal.expected_return}
+              {journal.expected_return || journal.expected_return}
             </p>
           </div>
           
           <div>
             <h4 className="font-medium text-gray-700">退出计划</h4>
             <p className="mt-1 text-gray-600 bg-gray-50 p-3 rounded-md">
-              {journal.exitPlan || journal.exit_plan}
+              {journal.exit_plan || journal.exit_plan}
             </p>
           </div>
         </div>
@@ -78,14 +78,14 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
         <div>
           <h4 className="font-medium text-gray-700">市场状况</h4>
           <p className="mt-1 text-gray-600 bg-gray-50 p-3 rounded-md">
-            {journal.marketConditions || journal.market_conditions || "未记录"}
+            {journal.market_conditions || journal.market_conditions || "未记录"}
           </p>
         </div>
         
         <div>
           <h4 className="font-medium text-gray-700">情绪状态</h4>
           <p className="mt-1 text-gray-600 bg-gray-50 p-3 rounded-md">
-            {journal.emotionalState || journal.emotional_state}
+            {journal.emotional_state || journal.emotional_state}
           </p>
         </div>
         
@@ -120,7 +120,7 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
           )}
           <div className="mt-2 text-gray-700 bg-blue-50 p-4 rounded-md prose max-w-none">
             <ReactMarkdown>
-              {String(journal.ai_review || journal.aiReview || "点击优化投资日志策略按钮获取AI分析建议")}
+              {String(journal.ai_review || journal.ai_review || "点击优化投资日志策略按钮获取AI分析建议")}
             </ReactMarkdown>
           </div>
         </div>

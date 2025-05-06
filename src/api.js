@@ -17,6 +17,16 @@ export async function addJournal(journal) {
   return res.json();
 }
 
+export async function updateJournal(journal) {
+  const res = await fetch(`${API_BASE}/journals/${journal.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(journal)
+  });
+  if (!res.ok) throw new Error('更新日志失败');
+  return res.json();
+}
+
 export async function deleteJournal(id) {
   const res = await fetch(`${API_BASE}/journals/${id}`, {
     method: 'DELETE'
