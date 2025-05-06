@@ -15,7 +15,7 @@ const JournalList = ({ journals, onView, onEdit, onDelete, onGenerateAI }) => {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-6">投资日志列表</h2>
+      <h2 className="text-xl font-semibold mb-6">交易日志</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {journals.map(journal => (
@@ -55,7 +55,7 @@ const JournalList = ({ journals, onView, onEdit, onDelete, onGenerateAI }) => {
                 className="inline-flex items-center text-sm text-purple-600 hover:text-purple-800 px-2 py-1 rounded hover:bg-purple-50"
               >
                 <Brain className="w-4 h-4 mr-1" />
-                查看AI复盘
+                AI复盘
               </button>
               
               <button
