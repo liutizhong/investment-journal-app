@@ -135,11 +135,7 @@ const JournalDetail = ({ journal, onClose, onEdit, onArchive, onGenerateAIReview
           
           {!journal.archived && (
             <button
-              onClick={() => {
-                if (window.confirm("确定要归档这条日志吗？归档后可在归档列表中查看。")) {
-                  onArchive(journal);
-                }
-              }}
+              onClick={() => onArchive(journal)}
               className="bg-amber-100 text-amber-700 px-4 py-2 rounded-md hover:bg-amber-200 transition-colors flex items-center"
             >
               <Archive className="w-4 h-4 mr-2" />

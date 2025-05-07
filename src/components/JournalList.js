@@ -29,7 +29,7 @@ const JournalList = ({ journals, onView, onEdit, onArchive, onGenerateAI }) => {
                   <Archive className="w-3 h-3 mr-1" />
                   已归档 {journal.exit_date && `(退出日期: ${journal.exit_date})`}
                 </div>
-                {journal.sell_records && journal.sell_records.length > 0 && (
+                {Array.isArray(journal.sell_records) && journal.sell_records.length > 0 && (
                   <div className="mt-1 text-xs text-amber-600">
                     <span>卖出记录: {journal.sell_records.length}笔</span>
                     {journal.sell_records.map((record, idx) => (
@@ -86,11 +86,7 @@ const JournalList = ({ journals, onView, onEdit, onArchive, onGenerateAI }) => {
               
               {!journal.archived && (
                 <button
-                  onClick={() => {
-                    if (window.confirm("确定要归档这条日志吗？归档后可在归档列表中查看。")) {
-                      onArchive(journal);
-                    }
-                  }}
+                  onClick={() => onArchive(journal)}
                   className="inline-flex items-center text-sm text-amber-600 hover:text-amber-800 px-2 py-1 rounded hover:bg-amber-50 ml-auto"
                 >
                   <Archive className="w-4 h-4 mr-1" />

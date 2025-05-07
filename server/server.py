@@ -143,13 +143,13 @@ async def update_journal(id: int, journal: Journal):
             update_result = await conn.fetchrow(
                 '''UPDATE journals 
                 SET date=$1, asset=$2, amount=$3, price=$4, strategy=$5, reasons=$6, risks=$7, 
-                expected_return=$8, exit_plan=$9, market_conditions=$10, emotional_state=$11, archived=$12, 
-                exit_date=$13, sell_records=$14 
-                WHERE id=$15 RETURNING *''',
+                expected_return=$8, exit_plan=$9, market_conditions=$10, emotional_state=$11, ai_review=$12, archived=$13, 
+                exit_date=$14, sell_records=$15 
+                WHERE id=$16 RETURNING *''',
                 journal.date, journal.asset, journal.amount, journal.price,
                 journal.strategy, journal.reasons, journal.risks,
                 journal.expected_return, journal.exit_plan, journal.market_conditions,
-                journal.emotional_state, journal.archived, journal.exit_date, sell_records_json, id
+                journal.emotional_state, journal.ai_review, journal.archived, journal.exit_date, sell_records_json, id
             )
             
             if not update_result:

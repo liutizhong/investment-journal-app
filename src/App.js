@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { fetchJournals, addJournal, generateAIReview, updateJournal } from './api';
+import { fetchJournals, addJournal, generateAIReview, updateJournal,deleteJournal } from './api';
 import JournalForm from './components/JournalForm';
 import JournalList from './components/JournalList';
 import JournalDetail from './components/JournalDetail';
 import AIReviewPage from './components/AIReviewPage';
+import ArchiveForm from './components/ArchiveForm';
 import Notification from './components/Notification';
 import { Layers, BookOpen, PlusCircle } from 'lucide-react';
 
@@ -14,6 +15,7 @@ const App = () => {
   const [view, setView] = useState('list'); // 'list', 'detail', 'form', 'aiReview'
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [journalToArchive, setJournalToArchive] = useState(null);
 
   // 从后端加载日志
   useEffect(() => {
@@ -75,47 +77,41 @@ const App = () => {
     }
   };
 
+  // 打开归档表单
+  const openArchiveForm = (journal) => {
+    setJournalToArchive(journal);
+  };
+
+  // 关闭归档表单
+  const closeArchiveForm = () => {
+    setJournalToArchive(null);
+  };
+
   // 归档日志
-  const handleArchiveJournal = async (journal, sellReason = null, sellPrice = null, sellAmount = null) => {
+  const handleArchiveJournal = async (journal) => {
     try {
-      // 如果没有提供卖出信息，弹出对话框收集
-      if (!sellReason && !journal.archived) {
-        // 创建一个自定义对话框收集卖出信息
-        const sellReasonPrompt = prompt('请输入卖出理由:');
-        if (sellReasonPrompt === null) return; // 用户取消
-        
-        const sellPricePrompt = prompt('请输入卖出价格:');
-        if (sellPricePrompt === null) return; // 用户取消
-        
-        const sellAmountPrompt = prompt('请输入卖出数量 (默认全部卖出):', journal.amount);
-        if (sellAmountPrompt === null) return; // 用户取消
-        
-        sellReason = sellReasonPrompt;
-        sellPrice = sellPricePrompt;
-        sellAmount = sellAmountPrompt || journal.amount;
-      }
-      
-      // 准备卖出记录
-      const sellRecord = sellReason ? {
-        date: new Date().toISOString().split('T')[0],
-        reason: sellReason,
-        price: sellPrice,
-        amount: sellAmount
-      } : null;
-      
-      // 确保sell_records是数组
-      const currentSellRecords = Array.isArray(journal.sell_records) ? journal.sell_records : [];
-      
-      // 更新日志状态为已归档
+      //const newSellRecords = Array.isArray(journal.sell_records) ? [...journal.sell_records] : [];
+
+      // Only add a new sell record if all details are provided and not empty strings
+      // if (sellReason && sellPrice && sellAmount && sellReason.trim() !== '' && String(sellPrice).trim() !== '' && String(sellAmount).trim() !== '') {
+      //   const newSellRecord = {
+      //     date: new Date().toISOString().split('T')[0],
+      //     reason: sellReason,
+      //     price: sellPrice,
+      //     amount: sellAmount,
+      //   };
+      //   newSellRecords.push(newSellRecord);
+      // }
+
       const archivedJournal = { 
         ...journal, 
-        archived: true, 
-        exit_date: new Date().toISOString().split('T')[0],
-        sell_records: sellRecord ? [...currentSellRecords, sellRecord] : currentSellRecords
+        archived: true
+        //exit_date: new Date().toISOString().split('T')[0],
+        //sell_records: newSellRecords
       };
       
       console.log('归档日志数据:', archivedJournal);
-      const updatedJournal = await updateJournal(archivedJournal);
+      const updatedJournal = await deleteJournal(journal.id);
       
       // 更新本地状态
       setJournals(prev => prev.map(j => j.id === journal.id ? updatedJournal : j));
@@ -123,8 +119,10 @@ const App = () => {
       
       if (selectedJournal && selectedJournal.id === journal.id) {
         setSelectedJournal(updatedJournal);
-        setView('detail');
       }
+      
+      // 关闭归档表单
+      closeArchiveForm();
     } catch (error) {
       console.error('归档失败:', error);
       showNotification('归档失败', 'error');
@@ -170,6 +168,14 @@ const App = () => {
     <div className="bg-gray-50 min-h-screen">
       <Notification notification={notification} />
       
+      {journalToArchive && (
+        <ArchiveForm 
+          journal={journalToArchive} 
+          onArchive={handleArchiveJournal} 
+          onCancel={closeArchiveForm} 
+        />
+      )}
+      
       <header className="bg-blue-700 text-white p-4 shadow-md">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold flex items-center">
@@ -209,7 +215,7 @@ const App = () => {
               journals={journals}
               onView={handleViewJournal}
               onEdit={handleEditJournal}
-              onArchive={handleArchiveJournal}
+              onArchive={openArchiveForm}
               onGenerateAI={handleViewAIReview}
               isLoading={isLoading}
             />
@@ -220,7 +226,7 @@ const App = () => {
               journal={selectedJournal}
               onClose={() => setView('list')}
               onEdit={handleEditJournal}
-              onArchive={handleArchiveJournal}
+              onArchive={openArchiveForm}
               onGenerateAIReview={handleGenerateAIReview}
             />
           )}
