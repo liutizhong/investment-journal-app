@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchJournals, addJournal, deleteJournal, generateAIReview, updateJournal } from './api';
+import { fetchJournals, addJournal, generateAIReview, updateJournal } from './api';
 import JournalForm from './components/JournalForm';
 import JournalList from './components/JournalList';
 import JournalDetail from './components/JournalDetail';
@@ -75,18 +75,23 @@ const App = () => {
     }
   };
 
-  // 删除日志
-  const handleDeleteJournal = async (id) => {
+  // 归档日志
+  const handleArchiveJournal = async (journal) => {
     try {
-      await deleteJournal(id);
-      setJournals(prev => prev.filter(journal => journal.id !== id));
-      showNotification('日志已删除', 'success');
-      if (selectedJournal && selectedJournal.id === id) {
+      // 更新日志状态为已归档
+      const archivedJournal = { ...journal, archived: true, exit_date: new Date().toISOString().split('T')[0] };
+      const updatedJournal = await updateJournal(archivedJournal);
+      
+      // 更新本地状态
+      setJournals(prev => prev.map(j => j.id === journal.id ? updatedJournal : j));
+      showNotification('日志已归档', 'success');
+      
+      if (selectedJournal && selectedJournal.id === journal.id) {
         setSelectedJournal(null);
         setView('list');
       }
     } catch (error) {
-      showNotification('删除失败', 'error');
+      showNotification('归档失败', 'error');
     }
   };
 
@@ -133,7 +138,7 @@ const App = () => {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold flex items-center">
             <Layers className="mr-2" />
-            投资日志系统
+            Trading Logs
           </h1>
           <div className="flex space-x-2">
             <button 
@@ -143,7 +148,7 @@ const App = () => {
               }`}
             >
               <BookOpen className="w-4 h-4 mr-1" />
-              日志列表
+              Lists
             </button>
             <button 
               onClick={() => {
@@ -155,7 +160,7 @@ const App = () => {
               }`}
             >
               <PlusCircle className="w-4 h-4 mr-1" />
-              新建日志
+              New
             </button>
           </div>
         </div>
@@ -168,7 +173,7 @@ const App = () => {
               journals={journals}
               onView={handleViewJournal}
               onEdit={handleEditJournal}
-              onDelete={handleDeleteJournal}
+              onArchive={handleArchiveJournal}
               onGenerateAI={handleViewAIReview}
               isLoading={isLoading}
             />
@@ -179,7 +184,7 @@ const App = () => {
               journal={selectedJournal}
               onClose={() => setView('list')}
               onEdit={handleEditJournal}
-              onDelete={handleDeleteJournal}
+              onArchive={handleArchiveJournal}
               onGenerateAIReview={handleGenerateAIReview}
             />
           )}
@@ -204,7 +209,7 @@ const App = () => {
       </main>
       
       <footer className="mt-12 p-4 bg-gray-100 text-center text-gray-600 text-sm">
-        <p>投资日志系统 &copy; {new Date().getFullYear()}</p>
+        <p>Trading Logs &copy; {new Date().getFullYear()}</p>
       </footer>
     </div>
   );

@@ -1,8 +1,8 @@
 import React from 'react';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, Archive } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview }) => {
+const JournalDetail = ({ journal, onClose, onEdit, onArchive, onGenerateAIReview }) => {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [error, setError] = React.useState(null);
   
@@ -133,16 +133,25 @@ const JournalDetail = ({ journal, onClose, onEdit, onDelete, onGenerateAIReview 
             编辑日志
           </button>
           
-          <button
-            onClick={() => {
-              if (window.confirm("确定要删除这条日志吗？此操作不可逆。")) {
-                onDelete(journal.id);
-              }
-            }}
-            className="bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200 transition-colors"
-          >
-            删除日志
-          </button>
+          {!journal.archived && (
+            <button
+              onClick={() => {
+                if (window.confirm("确定要归档这条日志吗？归档后可在归档列表中查看。")) {
+                  onArchive(journal);
+                }
+              }}
+              className="bg-amber-100 text-amber-700 px-4 py-2 rounded-md hover:bg-amber-200 transition-colors flex items-center"
+            >
+              <Archive className="w-4 h-4 mr-2" />
+              归档日志
+            </button>
+          )}
+          {journal.archived && (
+            <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-md flex items-center">
+              <Archive className="w-4 h-4 mr-2" />
+              已归档 {journal.exit_date && `(退出日期: ${journal.exit_date})`}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -99,7 +99,7 @@ async def create_journal(journal: Journal):
     try:
         pool = await get_db_pool()
         async with pool.acquire() as conn:
-            ai_review = await get_ai_review(journal)
+            #ai_review = await get_ai_review(journal)
             record = await conn.fetchrow(
                 '''INSERT INTO journals 
                 (date, asset, amount, price, strategy, reasons, risks, 

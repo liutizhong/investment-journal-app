@@ -1,7 +1,7 @@
 import React from 'react';
-import { FileText, Edit, Trash2, Brain } from 'lucide-react';
+import { FileText, Edit, Archive, Brain } from 'lucide-react';
 
-const JournalList = ({ journals, onView, onEdit, onDelete, onGenerateAI }) => {
+const JournalList = ({ journals, onView, onEdit, onArchive, onGenerateAI }) => {
   if (journals.length === 0) {
     return (
       <div className="text-center py-16">
@@ -15,14 +15,20 @@ const JournalList = ({ journals, onView, onEdit, onDelete, onGenerateAI }) => {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-6">交易日志</h2>
+      <h2 className="text-xl font-semibold mb-6">Trading Cards</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {journals.map(journal => (
           <div 
             key={journal.id} 
-            className="border rounded-lg p-4 hover:shadow-md transition bg-white"
+            className={`border rounded-lg p-4 hover:shadow-md transition ${journal.archived ? 'bg-gray-100' : 'bg-white'}`}
           >
+            {journal.archived && (
+              <div className="text-xs text-gray-500 mb-1 flex items-center">
+                <Archive className="w-3 h-3 mr-1" />
+                已归档 {journal.exit_date && `(退出日期: ${journal.exit_date})`}
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <h3 className="font-medium text-lg">{journal.asset}</h3>
               <span className="text-sm text-gray-500">{journal.date}</span>
@@ -66,17 +72,19 @@ const JournalList = ({ journals, onView, onEdit, onDelete, onGenerateAI }) => {
                 编辑
               </button>
               
-              <button
-                onClick={() => {
-                  if (window.confirm("确定要删除这条日志吗？此操作不可逆。")) {
-                    onDelete(journal.id);
-                  }
-                }}
-                className="inline-flex items-center text-sm text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 ml-auto"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                删除
-              </button>
+              {!journal.archived && (
+                <button
+                  onClick={() => {
+                    if (window.confirm("确定要归档这条日志吗？归档后可在归档列表中查看。")) {
+                      onArchive(journal);
+                    }
+                  }}
+                  className="inline-flex items-center text-sm text-amber-600 hover:text-amber-800 px-2 py-1 rounded hover:bg-amber-50 ml-auto"
+                >
+                  <Archive className="w-4 h-4 mr-1" />
+                  归档
+                </button>
+              )}
             </div>
           </div>
         ))}
