@@ -28,22 +28,8 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
   useEffect(() => {
     if (journal) {
       console.log('编辑模式，接收到的日志数据:', journal);
-      // Ensure sell_records is always an array
-      let sell_records = [];
-      if (journal.sell_records) {
-        // If it's a string (JSON), parse it
-        if (typeof journal.sell_records === 'string') {
-          try {
-            sell_records = JSON.parse(journal.sell_records);
-          } catch (e) {
-            console.error('Error parsing sell_records:', e);
-            sell_records = [];
-          }
-        } else if (Array.isArray(journal.sell_records)) {
-          // If it's already an array, use it
-          sell_records = journal.sell_records;
-        }
-      }
+      // sell_records should now be an array of objects directly
+      const sell_records = Array.isArray(journal.sell_records) ? journal.sell_records : [];
       
       setFormData({
         id: journal.id,
@@ -54,12 +40,18 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
         strategy: journal.strategy || '',
         reasons: journal.reasons || '',
         risks: journal.risks || '',
-        expected_return: journal.expected_return  || journal.expected_return || '',
-        exit_plan: journal.exit_plan || journal.exit_plan || '',
-        market_conditions: journal.market_conditions  || journal.market_conditions || '',
-        emotional_state: journal.emotional_state  || journal.emotional_state || '',
-        aiReview: journal.ai_review  || journal.aiReview || '',
-        sell_records: sell_records,
+        expected_return: journal.expected_return || '',
+        exit_plan: journal.exit_plan || '',
+        market_conditions: journal.market_conditions || '',
+        emotional_state: journal.emotional_state || '',
+        aiReview: journal.ai_review || journal.aiReview || '', // Keep existing aiReview logic
+        ai_review: journal.ai_review || '', // Ensure ai_review is also populated for consistency
+        sell_records: sell_records.map(sr => ({ // Ensure sell_records are in the SellRecordCreate format if needed, or just use them if they are already correct
+            date: sr.date,
+            price: sr.price,
+            amount: sr.amount,
+            reason: sr.reason
+        })),
         archived: journal.archived || false,
         exit_date: journal.exit_date || ''
       });
@@ -118,19 +110,26 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
       }));
       
       // 保存日志，确保同时包含驼峰式和下划线命名的字段
-      const journalWithReview = {
+      const journalToSave = {
         ...formData,
-        aiReview,
-        ai_review: aiReview,
-        // 确保同时包含驼峰式和下划线命名的字段
-        expected_return: formData.expected_return,
-        exit_plan: formData.exit_plan,
-        market_conditions: formData.market_conditions,
-        emotional_state: formData.emotional_state
+        aiReview, // Keep for local state if needed, but backend uses ai_review
+        ai_review: aiReview, // This is what backend expects
+        // Ensure sell_records are in the format expected by the backend (list[SellRecordCreate])
+        // The current formData.sell_records should already be in this format if handled correctly by add/remove sell record functions
+        sell_records: formData.sell_records.map(sr => ({
+          date: sr.date,
+          price: sr.price,
+          amount: sr.amount,
+          reason: sr.reason
+        }))
       };
       
-      console.log('提交的日志数据:', journalWithReview);
-      await onSave(journalWithReview);
+      // Remove id from sell_records if they exist, as backend expects SellRecordCreate for new/updated records
+      // However, our Pydantic model for Journal takes list[SellRecordCreate], so no id should be there.
+      // The mapping above already ensures this.
+
+      console.log('提交的日志数据:', journalToSave);
+      await onSave(journalToSave);
       
       // 成功后重置表单
       if (!isEdit) {

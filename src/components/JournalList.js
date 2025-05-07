@@ -33,7 +33,7 @@ const JournalList = ({ journals, onView, onEdit, onArchive, onGenerateAI }) => {
                   <div className="mt-1 text-xs text-amber-600">
                     <span>卖出记录: {journal.sell_records.length}笔</span>
                     {journal.sell_records.map((record, idx) => (
-                      <div key={idx} className="ml-4 mt-0.5">
+                      <div key={record.id || idx} className="ml-4 mt-0.5">
                         {record.date}: {record.amount}@{record.price}
                       </div>
                     ))}

@@ -149,11 +149,11 @@ const JournalDetail = ({ journal, onClose, onEdit, onArchive, onGenerateAIReview
                 已归档 {journal.exit_date && `(退出日期: ${journal.exit_date})`}
               </div>
               
-              {journal.sell_records && journal.sell_records.length > 0 && (
+              {Array.isArray(journal.sell_records) && journal.sell_records.length > 0 && (
                 <div className="mt-2 border-t pt-2">
                   <h5 className="text-sm font-medium mb-1">卖出记录:</h5>
                   {journal.sell_records.map((record, index) => (
-                    <div key={index} className="text-sm bg-amber-50 p-2 rounded-md mb-1">
+                    <div key={record.id || index} className="text-sm bg-amber-50 p-2 rounded-md mb-1">
                       <div className="flex justify-between">
                         <span>卖出日期: {record.date}</span>
                         <span>卖出价格: {record.price}</span>
