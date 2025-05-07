@@ -143,34 +143,34 @@ const JournalDetail = ({ journal, onClose, onEdit, onArchive, onGenerateAIReview
             </button>
           )}
           {journal.archived && (
-            <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-md">
+            <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-md mb-2">
               <div className="flex items-center">
                 <Archive className="w-4 h-4 mr-2" />
                 已归档 {journal.exit_date && `(退出日期: ${journal.exit_date})`}
               </div>
-              
-              {Array.isArray(journal.sell_records) && journal.sell_records.length > 0 && (
-                <div className="mt-2 border-t pt-2">
-                  <h5 className="text-sm font-medium mb-1">卖出记录:</h5>
-                  {journal.sell_records.map((record, index) => (
-                    <div key={record.id || index} className="text-sm bg-amber-50 p-2 rounded-md mb-1">
-                      <div className="flex justify-between">
-                        <span>卖出日期: {record.date}</span>
-                        <span>卖出价格: {record.price}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>卖出数量: {record.amount}</span>
-                      </div>
-                      <div className="mt-1">
-                        <span className="font-medium">卖出理由:</span> {record.reason}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
+
+          
         </div>
+        {/* Section for Sell Records, displayed if they exist, regardless of archived status */}
+        {Array.isArray(journal.sell_records) && journal.sell_records.length > 0 && (
+            <div className="mt-4 border-t pt-4">
+              <h4 className="font-medium text-gray-700 mb-2">卖出记录</h4>
+              {journal.sell_records.map((record, index) => (
+                <div key={record.id || index} className="text-sm bg-amber-50 p-3 rounded-md mb-2">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div><span className="font-medium">卖出日期:</span> {record.date}</div>
+                    <div><span className="font-medium">卖出价格:</span> {record.price}</div>
+                    <div><span className="font-medium">卖出数量:</span> {record.amount}</div>
+                  </div>
+                  <div className="mt-1">
+                    <span className="font-medium">卖出理由:</span> {record.reason}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
       </div>
     </div>
   );
