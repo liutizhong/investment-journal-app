@@ -24,9 +24,21 @@ const JournalList = ({ journals, onView, onEdit, onArchive, onGenerateAI }) => {
             className={`border rounded-lg p-4 hover:shadow-md transition ${journal.archived ? 'bg-gray-100' : 'bg-white'}`}
           >
             {journal.archived && (
-              <div className="text-xs text-gray-500 mb-1 flex items-center">
-                <Archive className="w-3 h-3 mr-1" />
-                已归档 {journal.exit_date && `(退出日期: ${journal.exit_date})`}
+              <div className="text-xs text-gray-500 mb-1">
+                <div className="flex items-center">
+                  <Archive className="w-3 h-3 mr-1" />
+                  已归档 {journal.exit_date && `(退出日期: ${journal.exit_date})`}
+                </div>
+                {journal.sell_records && journal.sell_records.length > 0 && (
+                  <div className="mt-1 text-xs text-amber-600">
+                    <span>卖出记录: {journal.sell_records.length}笔</span>
+                    {journal.sell_records.map((record, idx) => (
+                      <div key={idx} className="ml-4 mt-0.5">
+                        {record.date}: {record.amount}@{record.price}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             <div className="flex justify-between items-center">

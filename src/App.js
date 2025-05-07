@@ -76,10 +76,45 @@ const App = () => {
   };
 
   // 归档日志
-  const handleArchiveJournal = async (journal) => {
+  const handleArchiveJournal = async (journal, sellReason = null, sellPrice = null, sellAmount = null) => {
     try {
+      // 如果没有提供卖出信息，弹出对话框收集
+      if (!sellReason && !journal.archived) {
+        // 创建一个自定义对话框收集卖出信息
+        const sellReasonPrompt = prompt('请输入卖出理由:');
+        if (sellReasonPrompt === null) return; // 用户取消
+        
+        const sellPricePrompt = prompt('请输入卖出价格:');
+        if (sellPricePrompt === null) return; // 用户取消
+        
+        const sellAmountPrompt = prompt('请输入卖出数量 (默认全部卖出):', journal.amount);
+        if (sellAmountPrompt === null) return; // 用户取消
+        
+        sellReason = sellReasonPrompt;
+        sellPrice = sellPricePrompt;
+        sellAmount = sellAmountPrompt || journal.amount;
+      }
+      
+      // 准备卖出记录
+      const sellRecord = sellReason ? {
+        date: new Date().toISOString().split('T')[0],
+        reason: sellReason,
+        price: sellPrice,
+        amount: sellAmount
+      } : null;
+      
+      // 确保sell_records是数组
+      const currentSellRecords = Array.isArray(journal.sell_records) ? journal.sell_records : [];
+      
       // 更新日志状态为已归档
-      const archivedJournal = { ...journal, archived: true, exit_date: new Date().toISOString().split('T')[0] };
+      const archivedJournal = { 
+        ...journal, 
+        archived: true, 
+        exit_date: new Date().toISOString().split('T')[0],
+        sell_records: sellRecord ? [...currentSellRecords, sellRecord] : currentSellRecords
+      };
+      
+      console.log('归档日志数据:', archivedJournal);
       const updatedJournal = await updateJournal(archivedJournal);
       
       // 更新本地状态
@@ -87,10 +122,11 @@ const App = () => {
       showNotification('日志已归档', 'success');
       
       if (selectedJournal && selectedJournal.id === journal.id) {
-        setSelectedJournal(null);
-        setView('list');
+        setSelectedJournal(updatedJournal);
+        setView('detail');
       }
     } catch (error) {
+      console.error('归档失败:', error);
       showNotification('归档失败', 'error');
     }
   };

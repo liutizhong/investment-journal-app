@@ -30,6 +30,7 @@ async def get_db_pool():
 async def startup():
     pool = await get_db_pool()
     async with pool.acquire() as conn:
+        # 创建主表
         await conn.execute('''
             CREATE TABLE IF NOT EXISTS journals (
                 id SERIAL PRIMARY KEY,
@@ -45,9 +46,18 @@ async def startup():
                 market_conditions TEXT,
                 emotional_state VARCHAR(100),
                 ai_review TEXT,
-                archived BOOLEAN DEFAULT FALSE
+                archived BOOLEAN DEFAULT FALSE,
+                exit_date VARCHAR(20),
+                sell_records JSONB DEFAULT '[]'::jsonb
             );
         ''')
+
+# 卖出记录模型
+class SellRecord(BaseModel):
+    date: str
+    price: str
+    amount: str
+    reason: str
 
 # 日志模型
 class Journal(BaseModel):
@@ -64,6 +74,8 @@ class Journal(BaseModel):
     emotional_state: str
     ai_review: str | None = None
     archived: bool = False
+    exit_date: str | None = None
+    sell_records: list[SellRecord] | None = []
 
 class AIReviewInput(BaseModel):
     """仅包含优化投资日志策略所需的必填字段"""
@@ -99,17 +111,20 @@ async def create_journal(journal: Journal):
     try:
         pool = await get_db_pool()
         async with pool.acquire() as conn:
-            #ai_review = await get_ai_review(journal)
+            # 将sell_records转换为JSON格式
+            import json
+            sell_records_json = json.dumps([record.dict() for record in journal.sell_records]) if journal.sell_records else '[]'
+            
             record = await conn.fetchrow(
                 '''INSERT INTO journals 
                 (date, asset, amount, price, strategy, reasons, risks, 
-                expected_return, exit_plan, market_conditions, emotional_state, archived)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                expected_return, exit_plan, market_conditions, emotional_state, archived, exit_date, sell_records)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 RETURNING *''',
                 journal.date, journal.asset, journal.amount, journal.price,
                 journal.strategy, journal.reasons, journal.risks,
                 journal.expected_return, journal.exit_plan, journal.market_conditions,
-                journal.emotional_state, journal.archived
+                journal.emotional_state, journal.archived, journal.exit_date, sell_records_json
             )
             return record
     except Exception as e:
@@ -121,15 +136,20 @@ async def update_journal(id: int, journal: Journal):
     try:
         pool = await get_db_pool()
         async with pool.acquire() as conn:
+            # 将sell_records转换为JSON格式
+            import json
+            sell_records_json = json.dumps([record.dict() for record in journal.sell_records]) if journal.sell_records else '[]'
+            
             update_result = await conn.fetchrow(
                 '''UPDATE journals 
                 SET date=$1, asset=$2, amount=$3, price=$4, strategy=$5, reasons=$6, risks=$7, 
-                expected_return=$8, exit_plan=$9, market_conditions=$10, emotional_state=$11, archived=$12 
-                WHERE id=$13 RETURNING *''',
+                expected_return=$8, exit_plan=$9, market_conditions=$10, emotional_state=$11, archived=$12, 
+                exit_date=$13, sell_records=$14 
+                WHERE id=$15 RETURNING *''',
                 journal.date, journal.asset, journal.amount, journal.price,
                 journal.strategy, journal.reasons, journal.risks,
                 journal.expected_return, journal.exit_plan, journal.market_conditions,
-                journal.emotional_state, journal.archived, id
+                journal.emotional_state, journal.archived, journal.exit_date, sell_records_json, id
             )
             
             if not update_result:

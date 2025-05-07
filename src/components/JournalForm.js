@@ -16,7 +16,8 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
     exit_plan: '',
     market_conditions: '',
     emotional_state: '',
-    aiReview: ''
+    aiReview: '',
+    sell_records: []
   });
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -27,6 +28,23 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
   useEffect(() => {
     if (journal) {
       console.log('编辑模式，接收到的日志数据:', journal);
+      // Ensure sell_records is always an array
+      let sell_records = [];
+      if (journal.sell_records) {
+        // If it's a string (JSON), parse it
+        if (typeof journal.sell_records === 'string') {
+          try {
+            sell_records = JSON.parse(journal.sell_records);
+          } catch (e) {
+            console.error('Error parsing sell_records:', e);
+            sell_records = [];
+          }
+        } else if (Array.isArray(journal.sell_records)) {
+          // If it's already an array, use it
+          sell_records = journal.sell_records;
+        }
+      }
+      
       setFormData({
         id: journal.id,
         date: journal.date || '',
@@ -40,7 +58,10 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
         exit_plan: journal.exit_plan || journal.exit_plan || '',
         market_conditions: journal.market_conditions  || journal.market_conditions || '',
         emotional_state: journal.emotional_state  || journal.emotional_state || '',
-        aiReview: journal.ai_review  || journal.aiReview || ''
+        aiReview: journal.ai_review  || journal.aiReview || '',
+        sell_records: sell_records,
+        archived: journal.archived || false,
+        exit_date: journal.exit_date || ''
       });
       setIsEdit(true);
     } else {
@@ -70,7 +91,10 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
       exit_plan: '',
       market_conditions: '',
       emotional_state: '',
-      aiReview: ''
+      aiReview: '',
+      sell_records: [],
+      archived: false,
+      exit_date: ''
     });
   };
   
@@ -283,6 +307,128 @@ const JournalForm = ({ journal, onSave, onCancel, showNotification }) => {
             required
           />
         </div>
+        
+        {/* 卖出记录部分 - 在编辑模式下显示 */}
+        {isEdit && (
+          <div className="mt-6 border-t pt-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-medium">卖出记录</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  // 添加新的卖出记录
+                  const newRecord = {
+                    date: new Date().toISOString().split('T')[0],
+                    price: '',
+                    amount: '',
+                    reason: ''
+                  };
+                  setFormData(prev => {
+                    // Ensure sell_records is always an array
+                    const currentRecords = Array.isArray(prev.sell_records) ? prev.sell_records : [];
+                    return {
+                      ...prev,
+                      sell_records: [...currentRecords, newRecord]
+                    };
+                  });
+                }}
+                className="bg-amber-100 text-amber-700 px-3 py-1 rounded-md hover:bg-amber-200 transition-colors text-sm"
+              >
+                添加卖出记录
+              </button>
+            </div>
+            
+            {Array.isArray(formData.sell_records) && formData.sell_records.length > 0 ? (
+              <div className="space-y-3">
+                {formData.sell_records.map((record, index) => (
+                  <div key={index} className="bg-amber-50 p-3 rounded-md">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">卖出日期</label>
+                        <input
+                          type="date"
+                          value={record.date}
+                          onChange={(e) => {
+                            // Ensure we're working with an array
+                          const updatedRecords = Array.isArray(formData.sell_records) ? [...formData.sell_records] : [];
+                            updatedRecords[index] = { ...record, date: e.target.value };
+                            setFormData({ ...formData, sell_records: updatedRecords });
+                          }}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">卖出价格</label>
+                        <input
+                          type="text"
+                          value={record.price}
+                          onChange={(e) => {
+                            // Ensure we're working with an array
+                          const updatedRecords = Array.isArray(formData.sell_records) ? [...formData.sell_records] : [];
+                            updatedRecords[index] = { ...record, price: e.target.value };
+                            setFormData({ ...formData, sell_records: updatedRecords });
+                          }}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">卖出数量</label>
+                        <input
+                          type="text"
+                          value={record.amount}
+                          onChange={(e) => {
+                            // Ensure we're working with an array
+                          const updatedRecords = Array.isArray(formData.sell_records) ? [...formData.sell_records] : [];
+                            updatedRecords[index] = { ...record, amount: e.target.value };
+                            setFormData({ ...formData, sell_records: updatedRecords });
+                          }}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">卖出理由</label>
+                      <textarea
+                        value={record.reason}
+                        onChange={(e) => {
+                          // Ensure we're working with an array
+                          const updatedRecords = Array.isArray(formData.sell_records) ? [...formData.sell_records] : [];
+                          updatedRecords[index] = { ...record, reason: e.target.value };
+                          setFormData({ ...formData, sell_records: updatedRecords });
+                        }}
+                        rows="2"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                        required
+                      />
+                    </div>
+                    <div className="mt-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Ensure we're working with an array
+                          const updatedRecords = Array.isArray(formData.sell_records) 
+                            ? formData.sell_records.filter((_, i) => i !== index)
+                            : [];
+                          setFormData({ ...formData, sell_records: updatedRecords });
+                        }}
+                        className="text-red-600 text-sm hover:text-red-800"
+                      >
+                        删除此记录
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-gray-500 text-center py-4 bg-gray-50 rounded-md">
+                暂无卖出记录，点击上方按钮添加
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="flex gap-4 pt-4">
           <button
