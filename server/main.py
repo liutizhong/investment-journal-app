@@ -4,6 +4,7 @@ import asyncpg
 import os
 from openai import OpenAI
 from pydantic import BaseModel
+from datetime import datetime, timezone
 
 app = FastAPI()
 
@@ -45,7 +46,6 @@ async def startup():
                 exit_plan VARCHAR(100),
                 market_conditions TEXT,
                 emotional_state VARCHAR(100),
-                ai_review TEXT,
                 archived BOOLEAN DEFAULT FALSE,
                 exit_date VARCHAR(20)
             );
@@ -61,6 +61,15 @@ async def startup():
                 reason TEXT
             );
         ''')
+        # 创建AI复盘日志表
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS ai_review_logs (
+                id SERIAL PRIMARY KEY,
+                journal_id INTEGER REFERENCES journals(id) ON DELETE CASCADE,
+                review_content TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
 
 # 卖出记录模型
 class SellRecordCreate(BaseModel):
@@ -74,6 +83,21 @@ class SellRecord(SellRecordCreate):
     journal_id: int
 
 # 日志模型
+
+class AIReviewLogBase(BaseModel):
+    review_content: str
+
+class AIReviewLogCreate(AIReviewLogBase):
+    pass
+
+class AIReviewLog(AIReviewLogBase):
+    id: int
+    journal_id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
 class Journal(BaseModel):
     date: str
     asset: str
@@ -86,7 +110,6 @@ class Journal(BaseModel):
     exit_plan: str
     market_conditions: str
     emotional_state: str
-    ai_review: str | None = None
     archived: bool = False
     exit_date: str | None = None
     sell_records: list[SellRecordCreate] | None = [] # 用于创建和更新时接收数据
@@ -94,6 +117,7 @@ class Journal(BaseModel):
 class JournalResponse(Journal):
     id: int
     sell_records: list[SellRecord] | None = [] # 用于响应时包含完整的卖出记录信息
+    ai_review_logs: list[AIReviewLog] | None = []
 
 class AIReviewInput(BaseModel):
     """仅包含优化投资日志策略所需的必填字段"""
@@ -123,9 +147,13 @@ async def get_journals(include_archived: bool = False):
             
             result = []
             for journal_data in journal_records:
-                sell_records_data = await conn.fetch('SELECT * FROM sell_records WHERE journal_id = $1', journal_data['id'])
                 journal_dict = dict(journal_data)
+                sell_records_data = await conn.fetch('SELECT * FROM sell_records WHERE journal_id = $1 ORDER BY id ASC', journal_data['id'])
                 journal_dict['sell_records'] = [dict(sr) for sr in sell_records_data]
+                
+                ai_review_logs_data = await conn.fetch('SELECT * FROM ai_review_logs WHERE journal_id = $1 ORDER BY created_at ASC', journal_data['id'])
+                journal_dict['ai_review_logs'] = [AIReviewLog(**dict(log)) for log in ai_review_logs_data]
+                
                 result.append(JournalResponse(**journal_dict))
             return result
     except Exception as e:
@@ -180,13 +208,13 @@ async def update_journal(id: int, journal: Journal):
                 journal_update_result = await conn.fetchrow(
                     '''UPDATE journals 
                     SET date=$1, asset=$2, amount=$3, price=$4, strategy=$5, reasons=$6, risks=$7, 
-                    expected_return=$8, exit_plan=$9, market_conditions=$10, emotional_state=$11, ai_review=$12, archived=$13, 
-                    exit_date=$14 
-                    WHERE id=$15 RETURNING *''',
+                    expected_return=$8, exit_plan=$9, market_conditions=$10, emotional_state=$11, archived=$12, 
+                    exit_date=$13 
+                    WHERE id=$14 RETURNING *''',
                     journal.date, journal.asset, journal.amount, journal.price,
                     journal.strategy, journal.reasons, journal.risks,
                     journal.expected_return, journal.exit_plan, journal.market_conditions,
-                    journal.emotional_state, journal.ai_review, journal.archived, journal.exit_date, id
+                    journal.emotional_state, journal.archived, journal.exit_date, id
                 )
                 
                 if not journal_update_result:
@@ -211,6 +239,32 @@ async def update_journal(id: int, journal: Journal):
                 return JournalResponse(**response_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# 手动添加AI复盘日志
+@app.post("/api/journals/{journal_id}/ai_review_logs", response_model=AIReviewLog)
+async def create_ai_review_log_manual(journal_id: int, review_log: AIReviewLogCreate):
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            # 检查journal是否存在
+            journal_exists = await conn.fetchval('SELECT EXISTS(SELECT 1 FROM journals WHERE id=$1)', journal_id)
+            if not journal_exists:
+                raise HTTPException(status_code=404, detail=f"Journal with id {journal_id} not found")
+
+            new_log_record = await conn.fetchrow(
+                """INSERT INTO ai_review_logs (journal_id, review_content, created_at)
+                VALUES ($1, $2, $3) RETURNING *""",
+                journal_id, review_log.review_content, datetime.now(timezone.utc)
+            )
+            if not new_log_record:
+                raise HTTPException(status_code=500, detail="Failed to create AI review log")
+            return AIReviewLog(**dict(new_log_record))
+    except HTTPException: # Re-raise HTTPExceptions
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error creating AI review log: {str(e)}")
 
 # 归档日志
 @app.delete("/api/journals/{id}")
@@ -238,9 +292,13 @@ async def get_archived_journals():
             journal_records = await conn.fetch('SELECT * FROM journals WHERE archived = TRUE ORDER BY id DESC')
             result = []
             for journal_data in journal_records:
-                sell_records_data = await conn.fetch('SELECT * FROM sell_records WHERE journal_id = $1', journal_data['id'])
                 journal_dict = dict(journal_data)
+                sell_records_data = await conn.fetch('SELECT * FROM sell_records WHERE journal_id = $1 ORDER BY id ASC', journal_data['id'])
                 journal_dict['sell_records'] = [dict(sr) for sr in sell_records_data]
+                
+                ai_review_logs_data = await conn.fetch('SELECT * FROM ai_review_logs WHERE journal_id = $1 ORDER BY created_at ASC', journal_data['id'])
+                journal_dict['ai_review_logs'] = [AIReviewLog(**dict(log)) for log in ai_review_logs_data]
+                
                 result.append(JournalResponse(**journal_dict))
             return result
     except Exception as e:
@@ -263,34 +321,50 @@ async def unarchive_journal(id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# AI复盘生成接口
-@app.post("/api/journals/{id}/ai-review")
-async def generate_ai_review(id: int, journal: AIReviewInput):
+# AI review生成接口 (保存到新表)
+@app.post("/api/journals/{journal_id}/generate_ai_review", response_model=AIReviewLog)
+async def generate_ai_review_and_save(journal_id: int, review_input: AIReviewInput):
     """
-    Generate AI review for existing journal entry
+    Generate AI review for existing journal entry and save it as a new log.
     """
     try:
         pool = await get_db_pool()
         async with pool.acquire() as conn:
-            ai_review = await get_ai_review(journal)
-            await conn.execute('UPDATE journals SET ai_review=$1 WHERE id=$2', ai_review, id)
-            record = await conn.fetchrow('SELECT * FROM journals WHERE id=$1', id)
-            return record
+            # 检查journal是否存在
+            journal_exists = await conn.fetchval('SELECT EXISTS(SELECT 1 FROM journals WHERE id=$1)', journal_id)
+            if not journal_exists:
+                raise HTTPException(status_code=404, detail=f"Journal with id {journal_id} not found")
+
+            ai_review_content = await get_ai_review_content(review_input) # 使用新的辅助函数名
+            
+            # 检查AI复盘内容是否为错误信息
+            if "AI复盘生成失败" in ai_review_content:
+                raise HTTPException(status_code=500, detail=ai_review_content)
+
+            new_log_record = await conn.fetchrow(
+                """INSERT INTO ai_review_logs (journal_id, review_content, created_at)
+                VALUES ($1, $2, $3) RETURNING *""",
+                journal_id, ai_review_content, datetime.now(timezone.utc)
+            )
+            if not new_log_record:
+                raise HTTPException(status_code=500, detail="Failed to save AI review log after generation")
+            return AIReviewLog(**dict(new_log_record))
+    except HTTPException: # Re-raise HTTPExceptions
+        raise
     except Exception as e:
-        # 记录错误但不抛出异常，与Node.js实现保持一致
         import traceback
         traceback.print_exc()
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Error generating or saving AI review: {str(e)}")
 
-# AI review生成逻辑
-async def get_ai_review(journal: Journal) -> str:
+# AI review 内容生成逻辑 (原 get_ai_review)
+async def get_ai_review_content(journal_input: AIReviewInput) -> str:
     # 检查API KEY是否配置
     api_key = os.getenv('DASHSCOPE_API_KEY')
     if not api_key:
         print('DASHSCOPE_API_KEY环境变量未配置')
         return 'AI复盘生成失败，请确保已配置DASHSCOPE_API_KEY环境变量。'
         
-    prompt = f"请根据以下投资日志内容，给出详细的复盘建议：\n资产：{journal.asset}\n数量：{journal.amount}\n价格：{journal.price}\n策略：{journal.strategy}\n理由：{journal.reasons}\n风险：{journal.risks}\n预期收益：{journal.expected_return}\n退出计划：{journal.exit_plan}\n市场状况：{journal.market_conditions}\n情绪状态：{journal.emotional_state}"
+    prompt = f"请根据以下投资日志内容，给出详细的复盘建议：\n资产：{journal_input.asset}\n数量：{journal_input.amount}\n价格：{journal_input.price}\n策略：{journal_input.strategy}\n理由：{journal_input.reasons}\n风险：{journal_input.risks}\n预期收益：{journal_input.expected_return}\n退出计划：{journal_input.exit_plan}\n市场状况：{journal_input.market_conditions}\n情绪状态：{journal_input.emotional_state}"
     print(f"优化投资日志策略提示: {prompt}")
     
     try:

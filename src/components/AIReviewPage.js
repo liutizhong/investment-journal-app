@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Send } from 'lucide-react'; // Added Send icon
 import ReactMarkdown from 'react-markdown';
+import { generateAIReview, addAIReviewLogManual } from '../api'; // Import new API functions
 
-const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
+const AIReviewPage = ({ journal, onBack, onJournalUpdate }) => { // Changed onGenerateAIReview to onJournalUpdate
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmittingManualLog, setIsSubmittingManualLog] = useState(false);
+  const [manualLogText, setManualLogText] = useState('');
   const [error, setError] = useState(null);
   const [processedJournal, setProcessedJournal] = useState(null);
   
@@ -28,8 +31,10 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
       
       setProcessedJournal({
         ...journal,
-        sell_records: sell_records
+        sell_records: sell_records,
+        ai_review_logs: journal.ai_review_logs || [] // Ensure ai_review_logs is an array
       });
+      setError(null); // Clear previous errors when journal changes
     }
   }, [journal]);
   
@@ -101,9 +106,27 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
                 try {
                   setIsGenerating(true);
                   setError(null);
-                  await onGenerateAIReview(processedJournal);
+                  const reviewInput = {
+                    date: processedJournal.date,
+                    asset: processedJournal.asset,
+                    amount: processedJournal.amount,
+                    price: processedJournal.price,
+                    strategy: processedJournal.strategy,
+                    reasons: processedJournal.reasons,
+                    risks: processedJournal.risks,
+                    expected_return: processedJournal.expected_return,
+                    exit_plan: processedJournal.exit_plan,
+                    market_conditions: processedJournal.market_conditions,
+                    emotional_state: processedJournal.emotional_state,
+                  };
+                  const newLog = await generateAIReview(processedJournal.id, reviewInput);
+                  setProcessedJournal(prev => ({
+                    ...prev,
+                    ai_review_logs: [...(prev.ai_review_logs || []), newLog].sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
+                  }));
+                  if(onJournalUpdate) onJournalUpdate(); // Notify parent to refetch or update
                 } catch (err) {
-                  setError('优化投资日志策略失败，请重试');
+                  setError(err.message || '优化投资日志策略失败，请重试');
                   console.error(err);
                 } finally {
                   setIsGenerating(false);
@@ -120,7 +143,7 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-1" />
-                  {processedJournal.aiReview || processedJournal.ai_review ? '重新优化投资日志策略' : '优化投资日志策略'}
+                  生成AI建议
                 </>
               )}
             </button>
@@ -130,11 +153,67 @@ const AIReviewPage = ({ journal, onBack, onGenerateAIReview }) => {
             {error}
           </div>
         )}
-        <div className="text-gray-700 bg-blue-50 p-4 rounded-md prose max-w-none">
-          <ReactMarkdown>
-            {String(processedJournal.ai_review || processedJournal.aiReview || "暂无AI复盘内容")}
-          </ReactMarkdown>
-        </div>
+        {processedJournal.ai_review_logs && processedJournal.ai_review_logs.length > 0 ? (
+          processedJournal.ai_review_logs.map((log, index) => (
+            <div key={log.id || index} className="mb-4 text-gray-700 bg-blue-50 p-4 rounded-md prose max-w-none">
+              <ReactMarkdown>{log.review_content}</ReactMarkdown>
+              <p className="text-xs text-gray-500 mt-2">记录时间: {new Date(log.created_at).toLocaleString()}</p>
+            </div>
+          ))
+        ) : (
+          <div className="text-gray-700 bg-blue-50 p-4 rounded-md prose max-w-none">
+            <ReactMarkdown>{"暂无AI复盘内容"}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8 pt-6 border-t">
+        <h4 className="font-medium text-gray-700 mb-3">手动添加复盘日志</h4>
+        <textarea
+          value={manualLogText}
+          onChange={(e) => setManualLogText(e.target.value)}
+          placeholder="在此输入您的复盘思考..."
+          rows={4}
+          className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+        />
+        <button
+          onClick={async () => {
+            if (!manualLogText.trim()) {
+              setError('复盘内容不能为空');
+              return;
+            }
+            try {
+              setIsSubmittingManualLog(true);
+              setError(null);
+              const newLog = await addAIReviewLogManual(processedJournal.id, manualLogText);
+              setProcessedJournal(prev => ({
+                ...prev,
+                ai_review_logs: [...(prev.ai_review_logs || []), newLog].sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
+              }));
+              setManualLogText(''); // Clear textarea
+              if(onJournalUpdate) onJournalUpdate(); // Notify parent to refetch or update
+            } catch (err) {
+              setError(err.message || '添加复盘日志失败，请重试');
+              console.error(err);
+            } finally {
+              setIsSubmittingManualLog(false);
+            }
+          }}
+          disabled={isSubmittingManualLog}
+          className="mt-3 inline-flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-md hover:bg-green-200 transition disabled:opacity-50"
+        >
+          {isSubmittingManualLog ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+              提交中...
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 mr-1" />
+              提交日志
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
